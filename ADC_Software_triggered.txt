@@ -1,0 +1,92 @@
+// FILE:   adc_ex1_soc_software.c
+//
+// TITLE:  ADC Software Triggering
+//
+//! \addtogroup driver_example_list
+//! <h1>ADC Software Triggering</h1>
+//!
+//! This example converts some voltages on ADCA based on a software
+//! trigger.
+//!
+//! The ADCD will not convert until ADCA is complete, so the ADCs will not run
+//! asynchronously. However, this is much less efficient than allowing the ADCs
+//! to convert synchronously in parallel (for example, by using an ePWM
+//! trigger).
+//!
+//! \b External \b Connections \n
+//!  - A0, A1 should be connected to signals to convert
+//!
+//! \b Watch \b Variables \n
+//! - \b adcAResult0 - Digital representation of the voltage on pin A0
+//! - \b adcAResult1 - Digital representation of the voltage on pin A1
+
+
+#include "driverlib.h"
+#include "device.h"
+
+
+uint16_t adcAResult0;
+uint16_t adcAResult1;
+
+void ADC_RESULT();
+
+void main(void)
+{
+
+    Device_init();
+
+
+    Device_initGPIO();
+
+
+    Interrupt_initModule();
+
+
+    Interrupt_initVectorTable();
+
+    // ADC Initialization (Set as 12 bit resolution)
+
+    ADC_setPrescaler(ADCA_BASE, ADC_CLK_DIV_4_0);
+
+    ADC_setMode(ADCA_BASE, ADC_RESOLUTION_12BIT, ADC_MODE_SINGLE_ENDED);
+
+    ADC_setInterruptPulseMode(ADCA_BASE, ADC_PULSE_END_OF_CONV);
+
+    ADC_enableConverter(ADCA_BASE);
+
+    DEVICE_DELAY_US(1000);
+
+    // ADC SOC Initialization ADC CHANNEL A
+
+    ADC_setupSOC(ADCA_BASE, ADC_SOC_NUMBER0, ADC_TRIGGER_SW_ONLY, ADC_CH_ADCIN0, 15);
+    ADC_setupSOC(ADCA_BASE, ADC_SOC_NUMBER1, ADC_TRIGGER_SW_ONLY, ADC_CH_ADCIN1, 15);
+
+    ADC_setInterruptSource(ADCA_BASE, ADC_INT_NUMBER1, ADC_SOC_NUMBER1);
+    ADC_enableInterrupt(ADCA_BASE, ADC_INT_NUMBER1);
+    ADC_clearInterruptStatus(ADCA_BASE, ADC_INT_NUMBER1);
+
+    ADC_RESULT();
+
+}
+
+void ADC_RESULT(){
+    while(1)
+            {
+                //
+                // Convert, wait for completion, and store results
+                //
+                ADC_forceMultipleSOC(ADCA_BASE, (ADC_FORCE_SOC0 | ADC_FORCE_SOC1));
+
+                //
+                // Wait for ADCA to complete, then acknowledge flag
+                //
+                while(ADC_getInterruptStatus(ADCA_BASE, ADC_INT_NUMBER1) == false)
+                {
+
+                }
+                ADC_clearInterruptStatus(ADCA_BASE, ADC_INT_NUMBER1);
+
+                adcAResult0 = ADC_readResult(ADCARESULT_BASE, ADC_SOC_NUMBER0);
+                adcAResult1 = ADC_readResult(ADCARESULT_BASE, ADC_SOC_NUMBER1);
+            }
+}

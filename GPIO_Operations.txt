@@ -1,0 +1,48 @@
+include "driverlib.h"
+#include "device.h"
+
+void config(); ////////////Function Decleration
+
+void main(void)
+{
+Device_init();
+Interrupt_initModule();
+Interrupt_initVectorTable();
+
+config(); //////////////////////Function call
+
+for(;;){
+
+
+    if(GPIO_readPin(3)==0){
+        GPIO_writePin(DEVICE_GPIO_PIN_LED1,1);
+
+    }
+    else{
+        GPIO_writePin(DEVICE_GPIO_PIN_LED1, 0);
+        DEVICE_DELAY_US(1000000);
+        GPIO_writePin(DEVICE_GPIO_PIN_LED1,1);
+        DEVICE_DELAY_US(1000000);
+
+
+    }
+
+}
+
+
+////////////// config function definition //////////////////////////////
+
+void config(){
+            GPIO_setPadConfig(DEVICE_GPIO_PIN_LED1, GPIO_PIN_TYPE_STD);
+            GPIO_setPinConfig(GPIO_31_GPIO31);
+            GPIO_setDirectionMode(31, GPIO_DIR_MODE_OUT);
+
+            GPIO_setPadConfig(DEVICE_GPIO_PIN_LED2, GPIO_PIN_TYPE_STD);
+            GPIO_setPinConfig(GPIO_34_GPIO34);
+            GPIO_setDirectionMode(34, GPIO_DIR_MODE_OUT);
+
+            GPIO_setPadConfig(3, GPIO_PIN_TYPE_PULLUP);
+            GPIO_setPinConfig(GPIO_3_GPIO3);
+            GPIO_setDirectionMode(3, GPIO_DIR_MODE_IN);
+
+}
